@@ -28,8 +28,14 @@ jobs:
           try:
               gold = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/GC=F",headers={"User-Agent":"Mozilla/5.0"},timeout=15).json()
               gold_usd = gold["chart"]["result"][0]["meta"]["regularMarketPrice"]
-              usd = requests.get("https://open.er-api.com/v6/latest/USD",timeout=15).json()
-              toman = usd["rates"]["IRR"] / 10
+              alan = requests.get("https://alanchand.com/api/currencies",headers={"User-Agent":"Mozilla/5.0"},timeout=15).json()
+              toman = 0
+              for item in alan:
+                  if item.get("symbol") == "USD":
+                      toman = float(item.get("price", 0))
+                      break
+              if toman == 0:
+                  toman = 180000
               gram18 = round(gold_usd / 31.1035 * 0.75 * toman)
               gram24 = round(gold_usd / 31.1035 * toman)
               sekke = round(gold_usd / 31.1035 * 4.608 * toman)
