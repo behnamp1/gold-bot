@@ -1,0 +1,44 @@
+name: Gold Bot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */3 * * *'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install requests
+
+      - name: Send gold price
+        env:
+          BALE_TOKEN: ${{ secrets.BALE_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+        run: |
+          python3 - <<'PYEOF'
+          import requests, os
+          from datetime import datetime
+          TOKEN = os.environ["BALE_TOKEN"]
+          CHAT = os.environ["CHANNEL_ID"]
+          try:
+              gold = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/GC=F",headers={"User-Agent":"Mozilla/5.0"},timeout=15).json()
+              gold_usd = gold["chart"]["result"][0]["meta"]["regularMarketPrice"]
+              usd = requests.get("https://open.er-api.com/v6/latest/USD",timeout=15).json()
+              toman = usd["rates"]["IRR"] / 10
+              gram18 = round(gold_usd / 31.1035 * 0.75 * toman)
+              gram24 = round(gold_usd / 31.1035 * toman)
+              sekke = round(gold_usd / 31.1035 * 4.608 * toman)
+              nim = round(gold_usd / 31.1035 * 2.304 * toman)
+              rob = round(gold_usd / 31.1035 * 1.152 * toman)
+              now = datetime.now().strftime("%H:%M - %Y/%m/%d")
+              msg = "قیمت طلا و سکه\n\n" + "اونس: " + str(round(gold_usd,1)) + " دلار\n" + "دلار: " + str(round(toman)) + " تومان\n" + "گرم 18: " + str(gram18) + " تومان\n" + "گرم 24: " + str(gram24) + " تومان\n" + "سکه: " + str(sekke) + " تومان\n" + "نیم سکه: " + str(nim) + " تومان\n" + "ربع سکه: " + str(rob) + " تومان\n\n" + now
+          except Exception as e:
+              msg = "خطا: " + str(e)
+          r = requests.post("https://tapi.bale.ai/bot" + TOKEN + "/sendMessage",json={"chat_id":int(CHAT),"text":msg})
+          print(r.json())
+          PYEOF
